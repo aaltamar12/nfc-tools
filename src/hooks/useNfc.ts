@@ -84,3 +84,27 @@ export function useNfc() {
 
   return { isSupported, scanning, scans, error, startScan, stopScan, write };
 }
+
+
+/**
+ * Android Chrome NFC scan not triggering — common causes and fixes:
+ *
+ * 1. NDEFReader.scan() must be called from a user gesture on Android 12+.
+ *    Call scan() directly in a click handler, not from useEffect.
+ *
+ * 2. Store the AbortController in a ref so it is not garbage-collected
+ *    before the first scan fires.
+ *
+ * 3. Add a Page Visibility API listener to pause/resume scanning on screen lock.
+ */
+export async function scanNfcTag(
+  onReading: (event: Event) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  if (typeof NDEFReader === "undefined") {
+    throw new Error("Web NFC not supported in this browser");
+  }
+  const reader = new NDEFReader();
+  reader.addEventListener("reading", onReading);
+  await reader.scan({ signal });
+}
